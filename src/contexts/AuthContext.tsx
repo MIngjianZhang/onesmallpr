@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { apiClient } from '../api/client';
 
 interface AuthContextType {
   user: User | null;
@@ -53,51 +54,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const mockLogin = async (email: string) => {
-      console.log('Mocking login for development...');
-      const mockUser = {
-        id: 'dev-user-id',
+    console.log('Mocking login for development...');
+    // Generate a deterministic ID based on email to distinguish users
+    const mockId = 'dev-user-' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+    const name = email.split('@')[0];
+
+    // Sync with backend to ensure user exists in userStore
+    try {
+      await apiClient.post('/auth/login', {
+        id: mockId,
         email: email,
-        app_metadata: {},
-        user_metadata: { full_name: email.split('@')[0] },
-        aud: 'authenticated',
-        created_at: new Date().toISOString()
-      } as User;
-      
-      setUser(mockUser);
-      setSession({
-        access_token: 'mock-token',
-        token_type: 'bearer',
-        expires_in: 3600,
-        refresh_token: 'mock-refresh',
-        user: mockUser
+        name: name
       });
-      
-      // Check if this mock user has completed onboarding
-      const hasCompleted = localStorage.getItem(`onboarding_${mockUser.id}`) === 'true';
-      setOnboardingCompleted(hasCompleted);
+      // Save userId for OnboardingPage
+      localStorage.setItem('userId', mockId);
+    } catch (err) {
+      console.error("Failed to sync user with backend:", err);
+    }
+
+    const mockUser = {
+      id: mockId,
+      email: email,
+      app_metadata: {},
+      user_metadata: { full_name: name },
+      aud: 'authenticated',
+      created_at: new Date().toISOString()
+    } as User;
+
+    setUser(mockUser);
+    setSession({
+      access_token: 'mock-token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      refresh_token: 'mock-refresh',
+      user: mockUser
+    });
+
+    // Check if this mock user has completed onboarding
+    const hasCompleted = localStorage.getItem(`onboarding_${mockId}`) === 'true';
+    setOnboardingCompleted(hasCompleted);
   };
 
   const mockRegister = async (email: string, name: string) => {
-      console.log('Mocking registration for development...');
-      const mockUser = {
-        id: 'dev-user-id', // Using same ID for simplicity in mock, ideally should be unique
+    console.log('Mocking registration for development...');
+    const mockId = 'dev-user-' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+
+    // Sync with backend to ensure user exists in userStore
+    try {
+      await apiClient.post('/auth/login', {
+        id: mockId,
         email: email,
-        app_metadata: {},
-        user_metadata: { full_name: name },
-        aud: 'authenticated',
-        created_at: new Date().toISOString()
-      } as User;
-      
-      setUser(mockUser);
-      setSession({
-        access_token: 'mock-token',
-        token_type: 'bearer',
-        expires_in: 3600,
-        refresh_token: 'mock-refresh',
-        user: mockUser
+        name: name
       });
-      // New registration means onboarding not completed
-      setOnboardingCompleted(false);
+      // Save userId for OnboardingPage
+      localStorage.setItem('userId', mockId);
+    } catch (err) {
+      console.error("Failed to sync user with backend:", err);
+    }
+
+    const mockUser = {
+      id: mockId,
+      email: email,
+      app_metadata: {},
+      user_metadata: { full_name: name },
+      aud: 'authenticated',
+      created_at: new Date().toISOString()
+    } as User;
+
+    setUser(mockUser);
+    setSession({
+      access_token: 'mock-token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      refresh_token: 'mock-refresh',
+      user: mockUser
+    });
+    // New registration means onboarding not completed
+    localStorage.removeItem(`onboarding_${mockId}`); // Clear any old state
+    setOnboardingCompleted(false);
   };
 
   const signOut = async () => {

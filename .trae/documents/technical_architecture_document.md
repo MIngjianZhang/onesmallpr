@@ -36,7 +36,7 @@ graph TD
 - **初始化工具**: vite-init
 - **后端**: Node.js + Express@4 (API代理服务)
 - **CLI工具**: Node.js + Commander.js (npx命令行工具)
-- **AI服务**: Volcano Engine API
+- **AI服务**: Doubao AI Model (字节跳动豆包大模型)
 - **数据存储**: 本地JSON文件 (MVP阶段)
 - **版本控制**: GitHub API v4 (GraphQL)
 
@@ -50,23 +50,21 @@ graph TD
 | /assessment/:id | 学习检测页，AI问答测试界面 |
 | /protocol/:id | 协议生成页，生成和下载任务协议 |
 | /profile | 个人中心页，展示用户知识图谱和成就 |
-| /login | 登录页，GitHub OAuth认证 |
+| /login | 登录页，模拟登录/注册系统 |
 
 ## 4. API定义
 
 ### 4.1 任务相关API
 
 ```
-GET /api/tasks/recommend
+GET /api/tasks/fetch-from-github
 ```
 
 请求参数：
 | 参数名 | 参数类型 | 是否必需 | 描述 |
 |--------|----------|----------|------|
-| userLevel | string | false | 用户技术水平 (beginner/intermediate/advanced) |
-| languages | array | false | 熟悉的编程语言 |
-| page | number | false | 页码，默认1 |
-| limit | number | false | 每页数量，默认10 |
+| forceRefresh | boolean | false | 强制刷新缓存，默认false |
+| cacheTimeout | number | false | 缓存超时时间(小时)，默认1小时 |
 
 响应示例：
 ```json
@@ -77,13 +75,24 @@ GET /api/tasks/recommend
       "title": "Fix typo in documentation",
       "repository": "facebook/react",
       "difficulty": 0,
+      "realDifficulty": 1,
+      "aiAnalysis": {
+        "isTrulyEasy": true,
+        "reason": "任务仅涉及文档修改，无需代码逻辑变更",
+        "estimatedTime": "15-30分钟"
+      },
       "labels": ["good first issue", "documentation"],
       "description": "There is a small typo in the README file...",
-      "url": "https://github.com/facebook/react/issues/123"
+      "url": "https://github.com/facebook/react/issues/123",
+      "fetchedAt": "2024-01-15T10:30:00Z",
+      "cacheExpiry": "2024-01-15T11:30:00Z"
     }
   ],
-  "total": 50,
-  "page": 1
+  "total": 25,
+  "cacheInfo": {
+    "hit": true,
+    "expiry": "2024-01-15T11:30:00Z"
+  }
 }
 ```
 
@@ -334,7 +343,7 @@ npx onesmallpr recommend [--language python] [--difficulty 0]
 - **输出目录**: `dist`
 - **环境变量**: 
   - `VITE_GITHUB_TOKEN`: GitHub API访问令牌
-  - `VITE_VOLCANO_API_KEY`: 火山引擎API密钥
+  - `VITE_DOUBAO_API_KEY`: 豆包AI模型API密钥
 
 ### 7.2 API服务部署
 - **平台**: Railway/Render
@@ -342,7 +351,7 @@ npx onesmallpr recommend [--language python] [--difficulty 0]
 - **端口**: 3000
 - **环境变量**:
   - `GITHUB_TOKEN`: GitHub API访问令牌
-  - `VOLCANO_API_KEY`: 火山引擎API密钥
+  - `DOUBAO_API_KEY`: 豆包AI模型API密钥
   - `NODE_ENV`: production
 
 ### 7.3 CLI发布

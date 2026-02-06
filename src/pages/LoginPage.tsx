@@ -19,11 +19,22 @@ export default function LoginPage() {
     try {
       if (isRegister) {
         await mockRegister(email, name);
+        // New users always go to onboarding
+        navigate('/onboarding');
       } else {
         await mockLogin(email);
+        // Login success - check if we should go to onboarding or home
+        // Since mockLogin updates context asynchronously, we might need to rely on the effect in a protected route 
+        // OR just send everyone to onboarding/home for now.
+        // Let's check localStorage directly for immediate feedback
+        const mockId = 'dev-user-' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+        const hasCompleted = localStorage.getItem(`onboarding_${mockId}`) === 'true';
+        if (hasCompleted) {
+            navigate('/');
+        } else {
+            navigate('/onboarding');
+        }
       }
-      // Redirect to Onboarding after successful auth
-      navigate('/onboarding');
     } catch (error) {
       console.error('Auth failed:', error);
     } finally {

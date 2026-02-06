@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { Mail, User as UserIcon, Lock, ArrowRight } from 'lucide-react';
 
 export default function Login() {
-  const { mockLogin, mockRegister, user } = useAuth();
+  const { mockLogin, mockRegister, user, onboardingCompleted } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -28,6 +28,9 @@ export default function Login() {
   };
 
   if (user) {
+    if (!onboardingCompleted) {
+      return <Navigate to="/onboarding" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

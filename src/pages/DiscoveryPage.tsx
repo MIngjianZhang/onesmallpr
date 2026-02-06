@@ -1,67 +1,33 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Sparkles, RefreshCcw } from 'lucide-react';
 import TaskCard, { Task } from '../components/common/TaskCard';
 import Button from '../components/common/Button';
 import { apiClient } from '../api/client';
 
-// Extended Mock Data
-const MOCK_TASKS: Task[] = [
-  {
-    id: "1",
-    title: "Fix typo in README",
-    repo: "facebook/react",
-    tags: ["documentation", "good first issue"],
-    difficulty: 0,
-    description: "A simple task to fix a typo in the main documentation. Good for beginners."
-  },
-  {
-    id: "2",
-    title: "Update dependency version",
-    repo: "vuejs/core",
-    tags: ["maintenance", "chore"],
-    difficulty: 1,
-    description: "Bump the version of a dev dependency to the latest stable release."
-  },
-  {
-    id: "3",
-    title: "Add missing prop type",
-    repo: "vercel/next.js",
-    tags: ["typescript", "bug"],
-    difficulty: 1,
-    description: "Add a missing property definition to the TypeScript interface."
-  },
-  {
-    id: "4",
-    title: "Improve error message",
-    repo: "microsoft/vscode",
-    tags: ["dx", "good first issue"],
-    difficulty: 0,
-    description: "Make the error message more descriptive for the user."
-  },
-  {
-    id: "5",
-    title: "Add unit test for utility",
-    repo: "lodash/lodash",
-    tags: ["testing", "javascript"],
-    difficulty: 1,
-    description: "Add a missing unit test for the string utility function."
-  },
-  {
-    id: "6",
-    title: "Fix broken link in docs",
-    repo: "tailwindlabs/tailwindcss",
-    tags: ["documentation"],
-    difficulty: 0,
-    description: "Update the broken link in the configuration documentation."
-  },
-];
-
 export default function DiscoveryPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<number | 'all'>('all');
   const [showRecommendedOnly, setShowRecommendedOnly] = useState(false);
   const [userInterests, setUserInterests] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  // Fetch tasks from API
+  const fetchTasks = async () => {
+    try {
+      const res = await apiClient.get('/tasks/recommend');
+      if (res.tasks) {
+        setTasks(res.tasks);
+        if (res.lastUpdated) {
+             setLastUpdated(res.lastUpdated);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch tasks", err);
+    }
+  };
 
   // Fetch user profile to get interests
   useEffect(() => {
@@ -81,9 +47,22 @@ export default function DiscoveryPage() {
       }
     };
     fetchProfile();
+    fetchTasks();
   }, []);
 
-  const filteredTasks = MOCK_TASKS.filter(task => {
+  const handleRefresh = async () => {
+      setRefreshing(true);
+      try {
+          await apiClient.post('/tasks/refresh', {});
+          await fetchTasks();
+      } catch (err) {
+          console.error("Failed to refresh tasks", err);
+      } finally {
+          setRefreshing(false);
+      }
+  };
+
+  const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           task.repo.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDifficulty = difficultyFilter === 'all' || task.difficulty === difficultyFilter;
@@ -112,8 +91,23 @@ export default function DiscoveryPage() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <h1 className="text-3xl font-bold text-gray-800">Discover Tasks</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Discover Tasks</h1>
+            {lastUpdated && (
+                <p className="text-xs text-gray-400 mt-1">Last updated: {new Date(lastUpdated).toLocaleTimeString()}</p>
+            )}
+          </div>
           <div className="flex gap-2">
+            <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={handleRefresh}
+                disabled={refreshing}
+            >
+              <RefreshCcw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} /> 
+              {refreshing ? 'Refreshing...' : 'Refresh Issues'}
+            </Button>
             <Button variant="outline" size="sm" className="gap-2">
               <SlidersHorizontal className="h-4 w-4" /> Advanced Filter
             </Button>
@@ -188,7 +182,9 @@ export default function DiscoveryPage() {
         </div>
 
         {/* Task Grid */}
-        {filteredTasks.length > 0 ? (
+        {loading ? (
+             <div className="text-center py-20">Loading tasks...</div>
+        ) : filteredTasks.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTasks.map(task => (
               <TaskCard key={task.id} task={task} />

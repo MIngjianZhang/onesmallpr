@@ -9,16 +9,17 @@ const router = Router()
  * For now, we simulate a login that returns a user ID.
  */
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
-  // Simulate GitHub Login - Create a new user or return existing
+  // Receive user details from frontend to keep IDs in sync
+  const { id, email, name } = req.body;
+
   const mockUser = {
-    id: 'user-' + Date.now(),
-    username: 'new_contributor',
-    email: 'user@example.com',
+    id: id || 'user-' + Date.now(),
+    username: name || 'new_contributor',
+    email: email || 'user@example.com',
     avatarUrl: 'https://github.com/ghost.png'
   };
   
-  // In real world, check if exists. Here we just create a session.
-  // We'll treat this as "Pre-onboarding" state
+  // Create or update user in store
   userStore.createUser(mockUser);
 
   res.json({
