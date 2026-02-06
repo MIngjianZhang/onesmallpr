@@ -19,6 +19,44 @@ export interface AssessmentQuestion {
   correctAnswer: number;
 }
 
+export const analyzeIssueDifficulty = async (title: string, body: string): Promise<{ isEasy: boolean; reasoning: string; estimatedTime: string }> => {
+  try {
+    const prompt = `
+      You are an expert open source maintainer. Analyze the following GitHub issue to determine if it is TRULY a "Good First Issue" suitable for a beginner.
+      
+      Issue Title: "${title}"
+      Issue Body: "${body.substring(0, 1000)}" (truncated)
+      
+      Criteria for "Easy":
+      - Clear scope (e.g., fix typo, update docs, simple bug fix).
+      - Does NOT require deep architectural knowledge.
+      - Does NOT involve complex concurrency, security, or core logic changes.
+      
+      Return ONLY a raw JSON object:
+      {
+        "isEasy": boolean,
+        "reasoning": "string (short explanation why)",
+        "estimatedTime": "string (e.g., '30 mins', '2 hours')"
+      }
+    `;
+
+    const completion = await client.chat.completions.create({
+      messages: [
+        { role: "system", content: "You are a strict code auditor." },
+        { role: "user", content: prompt },
+      ],
+      model: MODEL_ID,
+    });
+
+    const text = completion.choices[0].message.content || '{}';
+    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error("Error analyzing issue:", error);
+    return { isEasy: true, reasoning: "AI analysis failed, defaulting to provided label.", estimatedTime: "Unknown" };
+  }
+};
+
 export const generateAssessment = async (taskDescription: string, repoName: string, userProfile: string = "Beginner"): Promise<AssessmentQuestion[]> => {
   try {
     const prompt = `

@@ -20,13 +20,19 @@ import OnboardingPage from './pages/OnboardingPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Protected Route Wrapper
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute = ({ children, requireOnboarding = true }: { children: React.ReactNode, requireOnboarding?: boolean }) => {
+  const { user, loading, onboardingCompleted } = useAuth();
   
   if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
   
   if (!user) {
     return <Navigate to="/auth/login" replace />;
+  }
+
+  // If user is logged in but hasn't completed onboarding, redirect to onboarding
+  // UNLESS we are already on the onboarding page (to prevent loops)
+  if (requireOnboarding && !onboardingCompleted) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;
@@ -42,10 +48,26 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="discover" element={<DiscoveryPage />} />
             <Route path="task/:id" element={<TaskDetailPage />} />
-            <Route path="assessment/:id" element={<AssessmentPage />} />
-            <Route path="protocol/:id" element={<ProtocolPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="onboarding" element={<OnboardingPage />} />
+            <Route path="assessment/:id" element={
+              <ProtectedRoute>
+                <AssessmentPage />
+              </ProtectedRoute>
+            } />
+            <Route path="protocol/:id" element={
+              <ProtectedRoute>
+                <ProtocolPage />
+              </ProtectedRoute>
+            } />
+            <Route path="profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
+            <Route path="onboarding" element={
+              <ProtectedRoute requireOnboarding={false}>
+                <OnboardingPage />
+              </ProtectedRoute>
+            } />
           </Route>
 
           {/* Auth Routes */}

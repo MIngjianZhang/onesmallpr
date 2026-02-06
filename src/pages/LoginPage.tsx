@@ -1,26 +1,31 @@
-import { Github, Terminal } from 'lucide-react';
+import { Terminal, Mail, ArrowRight } from 'lucide-react';
 import Button from '../components/common/Button';
-import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { mockLogin, mockRegister } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
 
-  const handleLogin = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     try {
-      // Call mock login API
-      const res = await apiClient.post('/auth/login', {});
-      if (res.success) {
-        // Store user ID in localStorage for MVP
-        localStorage.setItem('userId', res.user.id);
-        // Redirect to Onboarding
-        navigate('/onboarding');
+      if (isRegister) {
+        await mockRegister(email, name);
+      } else {
+        await mockLogin(email);
       }
+      // Redirect to Onboarding after successful auth
+      navigate('/onboarding');
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Auth failed:', error);
     } finally {
       setLoading(false);
     }
@@ -34,26 +39,79 @@ export default function LoginPage() {
             <Terminal className="h-8 w-8 text-primary" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Welcome to ONESMALLPR
+            {isRegister ? 'Create Account' : 'Welcome Back'}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Join the community and start your contribution journey.
+            {isRegister ? 'Start your open source journey today.' : 'Continue building your contribution graph.'}
           </p>
         </div>
         
-        <div className="mt-8 space-y-6">
-          <Button 
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 gap-3"
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            {isRegister && (
+              <div className="mb-4">
+                <label htmlFor="name" className="sr-only">Full Name</label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                  placeholder="Full Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="mb-4">
+              <label htmlFor="email-address" className="sr-only">Email address</label>
+              <input
+                id="email-address"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm rounded-md"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Button 
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary gap-2"
+            >
+              {loading ? 'Processing...' : (isRegister ? 'Create Account' : 'Sign In')}
+              {!loading && <ArrowRight className="h-4 w-4" />}
+            </Button>
+          </div>
+        </form>
+
+        <div className="text-center">
+          <button
+            onClick={() => setIsRegister(!isRegister)}
+            className="text-sm text-primary hover:text-primary/80 font-medium"
           >
-            <Github className="h-5 w-5" />
-            {loading ? 'Signing in...' : 'Sign in / Sign up with GitHub'}
-          </Button>
-          
-          <p className="text-xs text-center text-gray-500 mt-4">
-            By signing in, you agree to our Terms of Service and Privacy Policy.
-          </p>
+            {isRegister ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+          </button>
         </div>
       </div>
     </div>

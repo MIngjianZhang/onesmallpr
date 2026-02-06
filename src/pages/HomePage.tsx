@@ -69,7 +69,7 @@ export default function HomePage() {
             <Button href="/discover" size="lg" variant="secondary" className="gap-2">
               Start Journey <ArrowRight className="h-5 w-5" />
             </Button>
-            <Button href="https://github.com/onesmallpr" size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white">
+            <Button href="https://github.com/MIngjianZhang/onesmallpr" size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white/10 hover:text-white">
               View on GitHub
             </Button>
           </div>

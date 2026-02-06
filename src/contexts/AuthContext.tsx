@@ -6,6 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  onboardingCompleted: boolean;
+  completeOnboarding: () => void;
   mockLogin: (email: string) => Promise<void>;
   mockRegister: (email: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -17,12 +19,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   useEffect(() => {
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      // Check onboarding status from local storage for MVP
+      const hasCompleted = localStorage.getItem(`onboarding_${session?.user?.id}`) === 'true';
+      setOnboardingCompleted(hasCompleted);
       setLoading(false);
     });
 
@@ -30,11 +36,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      // Check onboarding status from local storage for MVP
+      const hasCompleted = localStorage.getItem(`onboarding_${session?.user?.id}`) === 'true';
+      setOnboardingCompleted(hasCompleted);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const completeOnboarding = () => {
+    if (user) {
+      localStorage.setItem(`onboarding_${user.id}`, 'true');
+      setOnboardingCompleted(true);
+    }
+  };
 
   const mockLogin = async (email: string) => {
       console.log('Mocking login for development...');
@@ -55,12 +71,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refresh_token: 'mock-refresh',
         user: mockUser
       });
+      
+      // Check if this mock user has completed onboarding
+      const hasCompleted = localStorage.getItem(`onboarding_${mockUser.id}`) === 'true';
+      setOnboardingCompleted(hasCompleted);
   };
 
   const mockRegister = async (email: string, name: string) => {
       console.log('Mocking registration for development...');
       const mockUser = {
-        id: 'dev-user-id',
+        id: 'dev-user-id', // Using same ID for simplicity in mock, ideally should be unique
         email: email,
         app_metadata: {},
         user_metadata: { full_name: name },
@@ -76,6 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refresh_token: 'mock-refresh',
         user: mockUser
       });
+      // New registration means onboarding not completed
+      setOnboardingCompleted(false);
   };
 
   const signOut = async () => {
@@ -95,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, mockLogin, mockRegister, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, onboardingCompleted, completeOnboarding, mockLogin, mockRegister, signOut }}>
       {children}
     </AuthContext.Provider>
   );

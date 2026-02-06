@@ -9,7 +9,7 @@ export default function Footer() {
           <div className="flex gap-6 text-sm">
             <a href="#" className="hover:text-white transition-colors">Terms</a>
             <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="https://github.com/onesmallpr" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a>
+            <a href="https://github.com/MIngjianZhang/onesmallpr" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a>
           </div>
         </div>
         <div className="mt-4 text-center text-xs text-gray-500">

@@ -33,6 +33,13 @@ export default function Button({
   const combinedClassName = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
 
   if (href) {
+    if (href.startsWith('http')) {
+      return (
+        <a href={href} className={combinedClassName} target="_blank" rel="noopener noreferrer">
+          {children}
+        </a>
+      );
+    }
     return (
       <Link to={href} className={combinedClassName}>
         {children}

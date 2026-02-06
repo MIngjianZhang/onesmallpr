@@ -1,3 +1,4 @@
+import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/common/Button';
@@ -6,6 +7,7 @@ import { Check, Terminal, Code, BookOpen } from 'lucide-react';
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const { completeOnboarding } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,6 +48,8 @@ export default function OnboardingPage() {
     const userId = localStorage.getItem('userId');
     try {
       await apiClient.post('/auth/onboarding', { userId, data: formData });
+      // Mark onboarding as complete
+      completeOnboarding();
       navigate('/profile'); // Or /discover
     } catch (error) {
       console.error('Onboarding failed:', error);
