@@ -37,6 +37,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error('Auth failed:', error);
+      // Optional: Add user feedback here (e.g., toast notification)
     } finally {
       setLoading(false);
     }

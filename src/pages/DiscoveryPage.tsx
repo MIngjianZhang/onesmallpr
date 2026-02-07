@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, SlidersHorizontal, Sparkles, RefreshCcw } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, RefreshCcw, Scroll } from 'lucide-react';
 import TaskCard, { Task } from '../components/common/TaskCard';
 import Button from '../components/common/Button';
 import { apiClient } from '../api/client';
@@ -7,56 +7,39 @@ import { apiClient } from '../api/client';
 export default function DiscoveryPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [difficultyFilter, setDifficultyFilter] = useState<number | 'all'>('all');
-  const [showRecommendedOnly, setShowRecommendedOnly] = useState(false);
-  const [userInterests, setUserInterests] = useState<string[]>([]);
+  const [rankFilter, setRankFilter] = useState<'all' | 'E' | 'D' | 'C' | 'B'>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  // Fetch tasks from API
-  const fetchTasks = async () => {
+  // Fetch quests from API
+  const fetchQuests = async () => {
     try {
-      const res = await apiClient.get('/tasks/recommend');
-      if (res.tasks) {
-        setTasks(res.tasks);
+      const res = await apiClient.get('/quests'); // Updated endpoint
+      if (res.quests) {
+        setTasks(res.quests);
         if (res.lastUpdated) {
              setLastUpdated(res.lastUpdated);
         }
       }
     } catch (err) {
-      console.error("Failed to fetch tasks", err);
+      console.error("Failed to fetch quests", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Fetch user profile to get interests
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const userId = localStorage.getItem('userId');
-        if (userId) {
-          const res = await apiClient.get(`/auth/me?userId=${userId}`);
-          if (res.user && res.user.interests) {
-            setUserInterests(res.user.interests);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch user profile", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
-    fetchTasks();
+    fetchQuests();
   }, []);
 
   const handleRefresh = async () => {
       setRefreshing(true);
       try {
-          await apiClient.post('/tasks/refresh', {});
-          await fetchTasks();
+          await apiClient.post('/quests/refresh', {});
+          await fetchQuests();
       } catch (err) {
-          console.error("Failed to refresh tasks", err);
+          console.error("Failed to refresh quests", err);
       } finally {
           setRefreshing(false);
       }
@@ -65,125 +48,86 @@ export default function DiscoveryPage() {
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           task.repo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDifficulty = difficultyFilter === 'all' || task.difficulty === difficultyFilter;
+    const matchesRank = rankFilter === 'all' || task.rank === rankFilter;
     
-    // Simple Recommendation Logic: Match tags with interests
-    // In a real app, this would be more sophisticated (AI-driven)
-    let matchesRecommendation = true;
-    if (showRecommendedOnly && userInterests.length > 0) {
-      // Map some interests to tags for demo purposes
-      const interestTags = userInterests.map(i => i.toLowerCase().split(' ')[0]); 
-      const taskTags = task.tags.map(t => t.toLowerCase());
-      
-      // Check if any tag loosely matches any interest
-      const hasMatch = taskTags.some(tag => 
-        interestTags.some(interest => tag.includes(interest) || interest.includes(tag))
-      ) || task.difficulty === 0; // Always recommend beginner tasks
-
-      matchesRecommendation = hasMatch;
-    }
-
-    return matchesSearch && matchesDifficulty && matchesRecommendation;
+    return matchesSearch && matchesRank;
   });
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8">
+    <div className="bg-guild-wood min-h-screen py-8 text-guild-parchment font-sans">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b-2 border-guild-bronze pb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Discover Tasks</h1>
+            <h1 className="text-4xl font-heading text-guild-gold drop-shadow-md flex items-center gap-3">
+              <Scroll className="w-8 h-8" />
+              Quest Board
+            </h1>
             {lastUpdated && (
-                <p className="text-xs text-gray-400 mt-1">Last updated: {new Date(lastUpdated).toLocaleTimeString()}</p>
+                <p className="text-xs text-guild-parchment-dark mt-1 italic">
+                  Last updated by the Guild Master: {new Date(lastUpdated).toLocaleTimeString()}
+                </p>
             )}
           </div>
           <div className="flex gap-2">
             <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2"
+                className="bg-guild-wood-light text-guild-gold border border-guild-bronze hover:bg-guild-wood gap-2"
                 onClick={handleRefresh}
                 disabled={refreshing}
             >
               <RefreshCcw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} /> 
-              {refreshing ? 'Refreshing...' : 'Refresh Issues'}
+              {refreshing ? 'Scouting...' : 'Refresh Posters'}
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
-              <SlidersHorizontal className="h-4 w-4" /> Advanced Filter
+            <Button className="bg-guild-wood-light text-guild-gold border border-guild-bronze hover:bg-guild-wood gap-2">
+              <SlidersHorizontal className="h-4 w-4" /> Filter Magic
             </Button>
           </div>
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-8 flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative flex-grow w-full md:w-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+        <div className="bg-guild-parchment p-4 rounded shadow-lg border-2 border-guild-wood-light mb-8 flex flex-col md:flex-row gap-4 items-center relative overflow-hidden">
+          {/* Decorative Screw/Nail heads */}
+          <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-guild-bronze shadow-inner"></div>
+          <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-guild-bronze shadow-inner"></div>
+          <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full bg-guild-bronze shadow-inner"></div>
+          <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-guild-bronze shadow-inner"></div>
+
+          <div className="relative flex-grow w-full md:w-auto text-guild-wood">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-guild-wood-light h-5 w-5" />
             <input 
               type="text" 
-              placeholder="Search by title, repo..." 
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Search for bounties..." 
+              className="w-full pl-10 pr-4 py-2 bg-white/50 border border-guild-wood-light rounded focus:outline-none focus:ring-2 focus:ring-guild-gold placeholder-guild-wood-light"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           
           <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
-            <Filter className="text-gray-400 h-5 w-5 mr-2" />
+            <Filter className="text-guild-wood h-5 w-5 mr-2" />
             
-            {/* Recommendation Toggle */}
-            <button
-              onClick={() => setShowRecommendedOnly(!showRecommendedOnly)}
-              className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
-                showRecommendedOnly
-                  ? 'bg-purple-100 text-purple-700 border-purple-200'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              <Sparkles className="h-3 w-3" />
-              Recommended for You
-            </button>
-
-            <div className="h-6 w-px bg-gray-200 mx-2"></div>
-
-            <span className="text-sm text-gray-600 whitespace-nowrap">Difficulty:</span>
+            <span className="text-sm text-guild-wood font-bold whitespace-nowrap">Rank:</span>
             <div className="flex gap-2">
-              <button 
-                onClick={() => setDifficultyFilter('all')}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  difficultyFilter === 'all' 
-                    ? 'bg-primary text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                All
-              </button>
-              <button 
-                onClick={() => setDifficultyFilter(0)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  difficultyFilter === 0 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Lv.0 (Beginner)
-              </button>
-              <button 
-                onClick={() => setDifficultyFilter(1)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  difficultyFilter === 1 
-                    ? 'bg-yellow-500 text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Lv.1 (Easy)
-              </button>
+              {['all', 'E', 'D', 'C', 'B'].map((rank) => (
+                <button 
+                  key={rank}
+                  onClick={() => setRankFilter(rank as any)}
+                  className={`px-3 py-1 rounded border transition-colors font-heading ${
+                    rankFilter === rank 
+                      ? 'bg-guild-wood text-guild-gold border-guild-gold' 
+                      : 'bg-white/50 text-guild-wood border-guild-wood-light hover:bg-white'
+                  }`}
+                >
+                  {rank === 'all' ? 'All Ranks' : `Rank ${rank}`}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Task Grid */}
         {loading ? (
-             <div className="text-center py-20">Loading tasks...</div>
+             <div className="text-center py-20 text-guild-parchment animate-pulse">Scouting the realms...</div>
         ) : filteredTasks.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTasks.map(task => (
@@ -191,12 +135,11 @@ export default function DiscoveryPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-lg border border-dashed border-gray-300">
-            <p className="text-gray-500 text-lg">No tasks found matching your criteria.</p>
+          <div className="text-center py-20 bg-guild-parchment/10 rounded border border-dashed border-guild-parchment-dark">
+            <p className="text-guild-parchment text-lg">No bounties found matching your criteria.</p>
             <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={() => { setSearchTerm(''); setDifficultyFilter('all'); setShowRecommendedOnly(false); }}
+              className="mt-4 bg-guild-bronze text-white"
+              onClick={() => { setSearchTerm(''); setRankFilter('all'); }}
             >
               Clear Filters
             </Button>

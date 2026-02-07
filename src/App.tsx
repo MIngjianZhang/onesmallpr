@@ -9,7 +9,7 @@ import Login from './pages/auth/Login';
 
 // Old App Components (Kept for reference or secondary access)
 import MainLayout from './components/layout/MainLayout';
-import HomePage from './pages/HomePage';
+import GuildHall from './pages/GuildHall';
 import DiscoveryPage from './pages/DiscoveryPage';
 import TaskDetailPage from './pages/TaskDetailPage';
 import AssessmentPage from './pages/AssessmentPage';
@@ -45,8 +45,9 @@ function App() {
         <Routes>
           {/* Main OneSmallPR Application Routes */}
           <Route path="/" element={<MainLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="discover" element={<DiscoveryPage />} />
+            <Route index element={<GuildHall />} />
+            <Route path="quest-board" element={<DiscoveryPage />} />
+            <Route path="discover" element={<Navigate to="/quest-board" replace />} />
             <Route path="task/:id" element={<TaskDetailPage />} />
             <Route path="assessment/:id" element={
               <ProtectedRoute>

@@ -60,22 +60,23 @@ export const analyzeIssueDifficulty = async (title: string, body: string): Promi
 export const generateAssessment = async (taskDescription: string, repoName: string, userProfile: string = "Beginner"): Promise<AssessmentQuestion[]> => {
   try {
     const prompt = `
-      You are an expert mentor for open source contributors. 
-      Based on the following task description for the repository "${repoName}" and the user's profile, generate 3 multiple-choice questions.
+      You are the "Grand Master" of the Adventurer's Guild (ONESMALLPR).
+      A novice adventurer wants to accept a quest for the repository "${repoName}".
       
-      The goal is to:
-      1. Test if the user understands the core requirements of the task.
-      2. Verify if the user has the necessary background knowledge (based on their profile) to attempt this.
-      3. Implicitly judge if this task is suitable for them.
+      Quest Description: "${taskDescription}"
+      Adventurer Rank: "${userProfile}"
+      
+      Generate 3 "Gatekeeper Trials" (Multiple Choice Questions) to test if they are ready.
+      The questions should be:
+      1. Technical but related to the specific context of the issue.
+      2. Written in an RPG/Fantasy tone (e.g., "To decipher the ancient scroll of JSON, which rune must be inscribed?").
+      3. Solvable if the user has read the issue description carefully.
 
-      User Profile: "${userProfile}"
-      Task Description: "${taskDescription}"
-      
       Return ONLY a raw JSON array (no markdown formatting, no code blocks) with the following structure for each question:
       {
         "id": number,
         "type": "multiple_choice",
-        "question": "string",
+        "question": "string (RPG flavor)",
         "options": ["string", "string", "string", "string"],
         "correctAnswer": number (0-indexed index of the correct option)
       }
@@ -102,22 +103,22 @@ export const generateAssessment = async (taskDescription: string, repoName: stri
       {
         id: 1,
         type: "multiple_choice",
-        question: "What is the primary goal of this task?",
-        options: ["Fix a bug", "Update documentation", "Add a new feature", "Improve performance"],
+        question: "Adventurer! What is the primary objective of this quest?",
+        options: ["Slay a bug", "Update the ancient texts (Docs)", "Forge a new feature", "Optimize the mana flow"],
         correctAnswer: 0
       },
       {
         id: 2,
         type: "multiple_choice",
-        question: "What is the first step you should take?",
-        options: ["Commit changes", "Fork the repository", "Push to main", "Delete the file"],
+        question: "Before you enter the dungeon (Repository), what must you do?",
+        options: ["Charge blindly", "Fork the repository", "Cast a fire spell", "Delete the README"],
         correctAnswer: 1
       },
       {
         id: 3,
         type: "multiple_choice",
-        question: "How do you verify your changes?",
-        options: ["Hope for the best", "Run tests or build locally", "Ask the maintainer immediately", "Submit PR without checking"],
+        question: "How will you prove your victory (Verify changes)?",
+        options: ["Trust in fate", "Run the local tests", "Ask the Guild Master immediately", "Submit without checking"],
         correctAnswer: 1
       }
     ];

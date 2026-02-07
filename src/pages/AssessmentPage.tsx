@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import Button from '../components/common/Button';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Sword, Scroll } from 'lucide-react';
 
 interface Question {
   id: number;
@@ -18,17 +18,14 @@ export default function AssessmentPage() {
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ passed: boolean; score: number; feedback: string } | null>(null);
+  const [result, setResult] = useState<{ passed: boolean; score: number; feedback: string; protocol_url?: string } | null>(null);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        // Retrieve user profile/skill level from storage or context
-        // For MVP, we default to "Beginner" or read from localStorage if available
         const userProfile = localStorage.getItem('userSkillLevel') || "Beginner (Python/Web)";
         
-        const data = await apiClient.post('/assessment/generate', { 
-          issueId: id,
+        const data = await apiClient.post(`/quests/${id}/generate-assessment`, { // Updated endpoint
           userProfile: userProfile
         });
         setQuestions(data.questions);
@@ -54,12 +51,18 @@ export default function AssessmentPage() {
         answer: ans
       }));
       
-      const data = await apiClient.post('/assessment/submit', {
-        issueId: id,
+      const data = await apiClient.post(`/quests/${id}/accept`, { // Updated endpoint
         answers: formattedAnswers
       });
       
-      setResult(data);
+      // Map response to result format
+      setResult({
+          passed: data.success,
+          score: data.success ? 100 : 0, // Mock score for now
+          feedback: data.message,
+          protocol_url: data.protocol_url
+      });
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -67,31 +70,38 @@ export default function AssessmentPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Generating assessment...</div>;
+  if (loading) return <div className="min-h-screen bg-guild-wood flex items-center justify-center text-guild-parchment animate-pulse font-heading text-xl">The Gatekeeper is preparing your trial...</div>;
 
   if (result) {
     return (
-      <div className="bg-gray-50 min-h-screen py-8">
+      <div className="bg-guild-wood min-h-screen py-8 font-serif">
         <div className="container mx-auto px-4 max-w-2xl text-center">
-          <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-guild-parchment p-8 rounded shadow-2xl border-4 border-guild-bronze relative">
+            {/* Wax Seal */}
+            <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full border-4 shadow-lg flex items-center justify-center ${result.passed ? 'bg-guild-green border-green-800' : 'bg-guild-red border-red-900'}`}>
+                {result.passed ? <CheckCircle className="text-white w-10 h-10" /> : <AlertCircle className="text-white w-10 h-10" />}
+            </div>
+
             {result.passed ? (
               <div className="flex flex-col items-center">
-                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Assessment Passed!</h1>
-                <p className="text-xl text-green-600 mb-6">Score: {result.score}%</p>
-                <p className="text-gray-600 mb-8">{result.feedback}</p>
-                <Button size="lg" onClick={() => navigate(`/protocol/${id}`)}>
-                  Generate Protocol
+                <h1 className="text-4xl font-heading font-bold text-guild-wood mb-4">Trial Passed!</h1>
+                <p className="text-xl text-guild-green font-bold mb-6">Score: {result.score}%</p>
+                <p className="text-guild-wood mb-8 italic">"{result.feedback}"</p>
+                <div className="bg-guild-wood/10 p-6 rounded mb-8 w-full border-2 border-dashed border-guild-wood/30">
+                    <Scroll className="w-12 h-12 mx-auto text-guild-bronze mb-2" />
+                    <p className="font-heading font-bold">The Ancient Scroll (Protocol) is ready.</p>
+                </div>
+                <Button size="lg" onClick={() => navigate(`/protocol/${id}`)} className="bg-guild-gold text-guild-wood border-2 border-guild-wood hover:bg-yellow-400">
+                  Claim Artifact
                 </Button>
               </div>
             ) : (
               <div className="flex flex-col items-center">
-                <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Assessment Failed</h1>
-                <p className="text-xl text-red-600 mb-6">Score: {result.score}%</p>
-                <p className="text-gray-600 mb-8">{result.feedback}</p>
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  Try Again
+                <h1 className="text-4xl font-heading font-bold text-guild-wood mb-4">Trial Failed</h1>
+                <p className="text-xl text-guild-red font-bold mb-6">Score: {result.score}%</p>
+                <p className="text-guild-wood mb-8 italic">"{result.feedback}"</p>
+                <Button variant="outline" onClick={() => window.location.reload()} className="border-guild-red text-guild-red hover:bg-red-50">
+                  Challenge Again
                 </Button>
               </div>
             )}
@@ -102,33 +112,37 @@ export default function AssessmentPage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8">
+    <div className="bg-guild-wood min-h-screen py-8 font-serif">
       <div className="container mx-auto px-4 max-w-2xl">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Understanding Check</h1>
-        <div className="space-y-6">
+        <div className="text-center mb-12">
+            <h1 className="text-4xl font-heading font-bold text-guild-gold mb-2 drop-shadow-md">The Gatekeeper's Trial</h1>
+            <p className="text-guild-parchment-dark italic">"Prove your worth, adventurer, before you face the beast."</p>
+        </div>
+        
+        <div className="space-y-8">
           {questions.map((q, index) => (
-            <div key={q.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="font-medium text-lg mb-4">
-                {index + 1}. {q.question}
+            <div key={q.id} className="bg-guild-parchment p-8 rounded shadow-lg border-2 border-guild-wood-light relative overflow-hidden">
+              <span className="absolute top-0 left-0 bg-guild-wood text-guild-gold px-3 py-1 text-sm font-bold rounded-br">Q{index + 1}</span>
+              
+              <h3 className="font-heading font-bold text-xl mb-6 text-guild-wood mt-4">
+                {q.question}
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {q.options.map((option, optIndex) => (
                   <label 
                     key={optIndex} 
-                    className={`flex items-center p-3 rounded-md border cursor-pointer transition-colors ${
+                    className={`flex items-center p-4 rounded border-2 cursor-pointer transition-all ${
                       answers[q.id] === optIndex 
-                        ? 'border-primary bg-blue-50' 
-                        : 'border-gray-200 hover:bg-gray-50'
+                        ? 'border-guild-gold bg-guild-gold/20' 
+                        : 'border-guild-wood/20 hover:border-guild-wood/50 hover:bg-guild-wood/5'
                     }`}
                   >
-                    <input 
-                      type="radio" 
-                      name={`question-${q.id}`} 
-                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
-                      checked={answers[q.id] === optIndex}
-                      onChange={() => handleOptionSelect(q.id, optIndex)}
-                    />
-                    <span className="ml-3 text-gray-700">{option}</span>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 ${
+                        answers[q.id] === optIndex ? 'border-guild-gold' : 'border-guild-wood/40'
+                    }`}>
+                        {answers[q.id] === optIndex && <div className="w-3 h-3 bg-guild-gold rounded-full" />}
+                    </div>
+                    <span className="text-guild-wood font-medium">{option}</span>
                   </label>
                 ))}
               </div>
@@ -136,13 +150,14 @@ export default function AssessmentPage() {
           ))}
         </div>
         
-        <div className="mt-8 flex justify-end">
+        <div className="mt-12 flex justify-center pb-12">
           <Button 
             size="lg" 
             onClick={handleSubmit} 
             disabled={Object.keys(answers).length < questions.length || submitting}
+            className="bg-guild-red text-white text-xl px-16 py-4 border-4 border-double border-guild-gold shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Submitting...' : 'Submit Answers'}
+            {submitting ? 'Consulting the Oracle...' : 'Submit Answers'} <Sword className="ml-2 w-5 h-5" />
           </Button>
         </div>
       </div>

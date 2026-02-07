@@ -135,18 +135,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Development Mock
-    if (import.meta.env.VITE_SUPABASE_URL?.includes('placeholder')) {
-      setUser(null);
-      setSession(null);
-      return;
-    }
-
+    // Development Mock or Real Supabase
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error) {
       console.error('Error signing out:', error);
+    } finally {
+        // Always clear local state
+        setUser(null);
+        setSession(null);
+        localStorage.removeItem('userId'); // Clear mock userId
     }
   };
 

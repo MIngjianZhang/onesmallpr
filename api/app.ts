@@ -12,8 +12,7 @@ import path from 'path'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import authRoutes from './routes/auth.js'
-import taskRoutes from './routes/tasks.js'
-import assessmentRoutes from './routes/assessment.js'
+import questRoutes from './routes/quests.js'
 import protocolRoutes from './routes/protocol.js'
 
 // for esm mode
@@ -33,8 +32,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
  * API Routes
  */
 app.use('/api/auth', authRoutes)
-app.use('/api/tasks', taskRoutes)
-app.use('/api/assessment', assessmentRoutes)
+app.use('/api/quests', questRoutes)
 app.use('/api/protocol', protocolRoutes)
 
 /**
@@ -49,6 +47,23 @@ app.use(
     })
   },
 )
+
+/**
+ * Root handler
+ */
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'ONESMALLPR Adventurer Guild API Service',
+    version: '2.0.0 (RPG Edition)',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      quests: '/api/quests',
+      protocol: '/api/protocol'
+    }
+  })
+})
 
 /**
  * error handler middleware
